@@ -1,0 +1,56 @@
+name: Deploy to GKE
+
+on:
+  push:
+    branches:
+      - main
+
+env:
+  PROJECT_ID: icai2026
+  GKE_CLUSTER: td-cluster
+  GKE_ZONE: us-east4-a
+
+jobs:
+  deploy:
+    name: Deploy to GKE
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get GKE credentials
+        uses: google-github-actions/get-gke-credentials@v2
+        with:
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_ZONE }}
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Apply ConfigMap (Challenge 3)
+        run: kubectl apply -f k8s/challenge3-configmap.yaml
+
+      - name: Apply PVC (Challenge 4)
+        run: kubectl apply -f k8s/challenge4-pvc.yaml
+
+      - name: Apply Service (Challenge 2)
+        run: kubectl apply -f k8s/challenge2-service.yaml
+
+      - name: Apply Deployment (Challenge 4 — with volume, configmap, 1 replica)
+        run: kubectl apply -f k8s/challenge4-deployment.yaml
+
+      - name: Wait for rollout
+        run: kubectl rollout status deployment/frontend-td-app --timeout=120s
+
+      - name: Show deployment status
+        run: |
+          kubectl get deployments
+          kubectl get services
+          kubectl get pods

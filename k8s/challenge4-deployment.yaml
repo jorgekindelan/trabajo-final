@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend-td-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: frontend-td-app
+  template:
+    metadata:
+      labels:
+        app: frontend-td-app
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:latest
+          ports:
+            - containerPort: 80
+          env:
+            - name: PROFESOR
+              valueFrom:
+                configMapKeyRef:
+                  name: app-td-config
+                  key: PROFESOR
+          volumeMounts:
+            - name: persistent-storage
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: persistent-storage
+          persistentVolumeClaim:
+            claimName: frontend-td-app-pvc
